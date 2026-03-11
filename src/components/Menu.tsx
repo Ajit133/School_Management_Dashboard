@@ -2,6 +2,13 @@ import { cookies } from "next/headers";
 import Image from "next/image";
 import Link from "next/link";
 
+const ROLE_HOME: Record<string, string> = {
+  admin: "/admin",
+  teacher: "/teacher",
+  student: "/student",
+  parent: "/parent",
+};
+
 const menuItems = [
   {
     title: "MENU",
@@ -9,14 +16,14 @@ const menuItems = [
       {
         icon: "/home.png",
         label: "Home",
-        href: "/list/home",
+        href: "ROLE_HOME", // resolved dynamically below
         visible: ["admin", "teacher", "student", "parent"],
       },
       {
         icon: "/teacher.png",
         label: "Teachers",
         href: "/list/teachers",
-        visible: ["admin", "teacher"],
+        visible: ["admin"],
       },
       {
         icon: "/student.png",
@@ -28,7 +35,7 @@ const menuItems = [
         icon: "/parent.png",
         label: "Parents",
         href: "/list/parents",
-        visible: ["admin", "teacher"],
+        visible: ["admin"],
       },
       {
         icon: "/subject.png",
@@ -119,6 +126,8 @@ const menuItems = [
 
 const Menu = () => {
   const role = cookies().get("auth_role")?.value ?? "";
+  const homeHref = ROLE_HOME[role] ?? "/";
+
   return (
     <div className="mt-4 text-sm">
       {menuItems.map((i) => (
@@ -128,9 +137,10 @@ const Menu = () => {
           </span>
           {i.items.map((item) => {
             if (item.visible.includes(role)) {
+              const href = item.href === "ROLE_HOME" ? homeHref : item.href;
               return (
                 <Link
-                  href={item.href}
+                  href={href}
                   key={item.label}
                   className="flex items-center justify-center lg:justify-start gap-4 text-gray-500 py-2 md:px-2 rounded-md hover:bg-ajitSkyLight"
                 >
