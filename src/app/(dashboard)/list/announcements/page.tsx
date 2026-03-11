@@ -2,7 +2,8 @@ import FormModal from "@/components/FormModal";
 import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
-import { announcementsData, role } from "@/lib/data";
+import { announcementsData } from "@/lib/data";
+import { cookies } from "next/headers";
 import Image from "next/image";
 
 type Announcement = {
@@ -33,6 +34,7 @@ const columns = [
 ];
 
 const AnnouncementListPage = () => {
+  const role = cookies().get("auth_role")?.value;
   const renderRow = (item: Announcement) => (
     <tr
       key={item.id}

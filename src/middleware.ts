@@ -13,8 +13,27 @@ const ROLE_HOME: Record<Role, string> = {
   parent: "/parent",
 };
 
+// Paths that only specific roles may access
+const PROTECTED_PATHS: { pattern: RegExp; allowed: Role[] }[] = [
+  { pattern: /^\/admin(\/|$)/, allowed: ["admin"] },
+  { pattern: /^\/teacher(\/|$)/, allowed: ["teacher"] },
+  { pattern: /^\/student(\/|$)/, allowed: ["student"] },
+  { pattern: /^\/parent(\/|$)/, allowed: ["parent"] },
+  { pattern: /^\/list\/subjects(\/|$)/, allowed: ["admin"] },
+  { pattern: /^\/list\/(teachers|students|parents|classes|lessons)(\/|$)/, allowed: ["admin", "teacher"] },
+];
+
 function getRoleHome(role: string): string {
   return ROLE_HOME[role as Role] ?? "/sign-in";
+}
+
+function isAllowed(role: string, pathname: string): boolean {
+  for (const { pattern, allowed } of PROTECTED_PATHS) {
+    if (pattern.test(pathname)) {
+      return allowed.includes(role as Role);
+    }
+  }
+  return true;
 }
 
 export function middleware(request: NextRequest) {
@@ -42,6 +61,11 @@ export function middleware(request: NextRequest) {
   if (!role) {
     const url = new URL("/sign-in", request.url);
     return NextResponse.redirect(url);
+  }
+
+  // Role does not have access to this path → redirect to their own dashboard
+  if (!isAllowed(role, pathname)) {
+    return NextResponse.redirect(new URL(getRoleHome(role), request.url));
   }
 
   return NextResponse.next();

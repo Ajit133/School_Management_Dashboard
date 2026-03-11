@@ -2,11 +2,12 @@ import Announcements from "@/components/Announcements";
 import BigCalendar from "@/components/BigCalender";
 import FormModal from "@/components/FormModal";
 import Performance from "@/components/Performance";
-import { role } from "@/lib/data";
+import { cookies } from "next/headers";
 import Image from "next/image";
 import Link from "next/link";
 
 const SingleTeacherPage = () => {
+  const role = cookies().get("auth_role")?.value;
   return (
     <div className="flex-1 p-4 flex flex-col gap-4 xl:flex-row">
       {/* LEFT */}

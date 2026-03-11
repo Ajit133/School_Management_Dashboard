@@ -2,7 +2,8 @@ import FormModal from "@/components/FormModal";
 import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
-import { role, subjectsData } from "@/lib/data";
+import { subjectsData } from "@/lib/data";
+import { cookies } from "next/headers";
 import Image from "next/image";
 
 type Subject = {
@@ -28,6 +29,7 @@ const columns = [
 ];
 
 const SubjectListPage = () => {
+  const role = cookies().get("auth_role")?.value;
   const renderRow = (item: Subject) => (
     <tr
       key={item.id}
@@ -62,7 +64,7 @@ const SubjectListPage = () => {
             <button className="w-8 h-8 flex items-center justify-center rounded-full bg-ajitYellow">
               <Image src="/sort.png" alt="" width={14} height={14} />
             </button>
-            {role === "admin" && <FormModal table="teacher" type="create" />}
+            {role === "admin" && <FormModal table="subject" type="create" />}
           </div>
         </div>
       </div>

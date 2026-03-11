@@ -1,10 +1,13 @@
 import Announcements from "@/components/Announcements";
 import BigCalendar from "@/components/BigCalender";
+import FormModal from "@/components/FormModal";
 import Performance from "@/components/Performance";
+import { cookies } from "next/headers";
 import Image from "next/image";
 import Link from "next/link";
 
 const SingleStudentPage = () => {
+  const role = cookies().get("auth_role")?.value;
   return (
     <div className="flex-1 p-4 flex flex-col gap-4 xl:flex-row">
       {/* LEFT */}
@@ -23,7 +26,28 @@ const SingleStudentPage = () => {
               />
             </div>
             <div className="w-2/3 flex flex-col justify-between gap-4">
-              <h1 className="text-xl font-semibold">Kamarown Mortage</h1>
+              <div className="flex items-center gap-4">
+                <h1 className="text-xl font-semibold">Kamarown Mortage</h1>
+                {role === "admin" && (
+                  <FormModal
+                    table="student"
+                    type="update"
+                    data={{
+                      id: 1,
+                      username: "kamarown",
+                      email: "kamarown@example.com",
+                      password: "password",
+                      firstName: "Kamarown",
+                      lastName: "Mortage",
+                      phone: "+1 234 567",
+                      address: "123 Main St",
+                      bloodType: "A+",
+                      dateOfBirth: "2010-01-01",
+                      sex: "male",
+                    }}
+                  />
+                )}
+              </div>
               <p className="text-sm text-gray-500">
                 Lorem ipsum, dolor sit amet consectetur adipisicing elit.
               </p>

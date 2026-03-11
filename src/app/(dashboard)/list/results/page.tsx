@@ -2,10 +2,8 @@ import FormModal from "@/components/FormModal";
 import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
-import {
-  resultsData,
-  role,
-} from "@/lib/data";
+import { resultsData } from "@/lib/data";
+import { cookies } from "next/headers";
 import Image from "next/image";
 
 type Result = {
@@ -55,6 +53,7 @@ const columns = [
 ];
 
 const ResultListPage = () => {
+  const role = cookies().get("auth_role")?.value;
   const renderRow = (item: Result) => (
     <tr
       key={item.id}
@@ -68,7 +67,7 @@ const ResultListPage = () => {
       <td className="hidden md:table-cell">{item.date}</td>
       <td>
         <div className="flex items-center gap-2">
-          {role === "admin" || role === "teacher" && (
+          {(role === "admin" || role === "teacher") && (
             <>
               <FormModal table="result" type="update" data={item} />
               <FormModal table="result" type="delete" id={item.id} />
@@ -93,7 +92,7 @@ const ResultListPage = () => {
             <button className="w-8 h-8 flex items-center justify-center rounded-full bg-ajitYellow">
               <Image src="/sort.png" alt="" width={14} height={14} />
             </button>
-            {role === "admin" || role === "teacher" && <FormModal table="result" type="create" />}
+            {(role === "admin" || role === "teacher") && <FormModal table="result" type="create" />}
           </div>
         </div>
       </div>

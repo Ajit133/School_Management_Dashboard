@@ -2,7 +2,8 @@ import FormModal from "@/components/FormModal";
 import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
-import { eventsData, role } from "@/lib/data";
+import { eventsData } from "@/lib/data";
+import { cookies } from "next/headers";
 import Image from "next/image";
 
 type Event = {
@@ -45,6 +46,7 @@ const columns = [
 ];
 
 const EventListPage = () => {
+  const role = cookies().get("auth_role")?.value;
   const renderRow = (item: Event) => (
     <tr
       key={item.id}

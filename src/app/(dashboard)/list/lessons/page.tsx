@@ -2,7 +2,8 @@ import FormModal from "@/components/FormModal";
 import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
-import { lessonsData, role } from "@/lib/data";
+import { lessonsData } from "@/lib/data";
+import { cookies } from "next/headers";
 import Image from "next/image";
 
 type Lesson = {
@@ -33,6 +34,7 @@ const columns = [
 ];
 
 const LessonListPage = () => {
+  const role = cookies().get("auth_role")?.value;
   const renderRow = (item: Lesson) => (
     <tr
       key={item.id}

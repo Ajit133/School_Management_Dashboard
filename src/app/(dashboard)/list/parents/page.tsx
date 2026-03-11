@@ -2,7 +2,8 @@ import FormModal from "@/components/FormModal";
 import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
-import { parentsData, role } from "@/lib/data";
+import { parentsData } from "@/lib/data";
+import { cookies } from "next/headers";
 import Image from "next/image";
 
 type Parent = {
@@ -41,6 +42,7 @@ const columns = [
 ];
 
 const ParentListPage = () => {
+  const role = cookies().get("auth_role")?.value;
   const renderRow = (item: Parent) => (
     <tr
       key={item.id}
@@ -83,7 +85,7 @@ const ParentListPage = () => {
               <Image src="/sort.png" alt="" width={14} height={14} />
             </button>
             {role === "admin" && (
-              <FormModal table="teacher" type="create"/>
+              <FormModal table="parent" type="create"/>
             )}
           </div>
         </div>
