@@ -2,6 +2,9 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { prisma } from "./prisma";
+import { UserSex } from "@prisma/client";
+import { revalidatePath } from "next/cache";
 
 // ---------------------------------------------------------------------------
 // Demo credential store – replace with a real DB query in production.
@@ -56,3 +59,71 @@ export async function logout() {
   cookies().delete("auth_role");
   redirect("/sign-in");
 }
+
+// ---------------------------------------------------------------------------
+// Teacher CRUD
+// ---------------------------------------------------------------------------
+export async function createTeacher(
+  data: any
+): Promise<{ success: boolean; error: boolean }> {
+  try {
+    await prisma.teacher.create({
+      data: {
+        username: data.username,
+        name: data.firstName,
+        surname: data.lastName,
+        email: data.email || undefined,
+        phone: data.phone || undefined,
+        address: data.address,
+        bloodType: data.bloodType,
+        birthday: data.birthday,
+        sex: data.sex === "male" ? UserSex.MALE : UserSex.FEMALE,
+      },
+    });
+    revalidatePath("/list/teachers");
+    return { success: true, error: false };
+  } catch (err) {
+    console.error(err);
+    return { success: false, error: true };
+  }
+}
+
+export async function updateTeacher(
+  data: any
+): Promise<{ success: boolean; error: boolean }> {
+  try {
+    await prisma.teacher.update({
+      where: { id: data.id },
+      data: {
+        username: data.username,
+        name: data.firstName,
+        surname: data.lastName,
+        email: data.email || undefined,
+        phone: data.phone || undefined,
+        address: data.address,
+        bloodType: data.bloodType,
+        birthday: data.birthday,
+        sex: data.sex === "male" ? UserSex.MALE : UserSex.FEMALE,
+      },
+    });
+    revalidatePath("/list/teachers");
+    return { success: true, error: false };
+  } catch (err) {
+    console.error(err);
+    return { success: false, error: true };
+  }
+}
+
+export async function deleteTeacher(
+  id: string
+): Promise<{ success: boolean; error: boolean }> {
+  try {
+    await prisma.teacher.delete({ where: { id } });
+    revalidatePath("/list/teachers");
+    return { success: true, error: false };
+  } catch (err) {
+    console.error(err);
+    return { success: false, error: true };
+  }
+}
+
