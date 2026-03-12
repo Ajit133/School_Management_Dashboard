@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import { Dispatch, SetStateAction, useState } from "react";
-import { deleteTeacher, deleteSubject, deleteClass } from "@/lib/actions";
+import { deleteTeacher, deleteSubject, deleteClass, deleteStudent } from "@/lib/actions";
 import { useRouter } from "next/navigation";
 
 const TeacherForm = dynamic(() => import("./forms/TeacherForm"), {
@@ -56,7 +56,9 @@ const forms: {
       relatedData={relatedData}
     />
   ),
-  student: (type, data, setOpen) => <StudentForm type={type} data={data} />,
+  student: (type, data, setOpen, relatedData) => (
+    <StudentForm type={type} data={data} setOpen={setOpen} relatedData={relatedData} />
+  ),
   parent: (type, data, setOpen) => <ParentForm type={type} data={data} />,
   subject: (type, data, setOpen) => <SubjectForm type={type} data={data} />,
   class: (type, data, setOpen, relatedData) => (
@@ -119,6 +121,8 @@ const FormModal = ({
         result = await deleteSubject(Number(id));
       } else if (table === "class") {
         result = await deleteClass(Number(id));
+      } else if (table === "student") {
+        result = await deleteStudent(String(id));
       } else {
         setDeleteError(true);
         return;

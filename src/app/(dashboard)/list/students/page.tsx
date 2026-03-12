@@ -2,22 +2,17 @@ import FormModal from "@/components/FormModal";
 import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
-import { studentsData } from "@/lib/data";
+import { prisma } from "@/lib/prisma";
+import { ITEM_PER_PAGE } from "@/lib/settings";
+import { Prisma } from "@prisma/client";
 import { cookies } from "next/headers";
 import Image from "next/image";
 import Link from "next/link";
+import { Suspense } from "react";
 
-type Student = {
-  id: number;
-  studentId: string;
-  name: string;
-  email?: string;
-  photo: string;
-  phone?: string;
-  grade: number;
-  class: string;
-  address: string;
-};
+type StudentList = Prisma.StudentGetPayload<{
+  include: { class: { include: { grade: true } } };
+}>;
 
 const columns = [
   {
@@ -50,28 +45,80 @@ const columns = [
   },
 ];
 
-const StudentListPage = () => {
+const StudentListPage = async ({
+  searchParams,
+}: {
+  searchParams: { [key: string]: string | undefined };
+}) => {
   const role = cookies().get("auth_role")?.value;
-  const renderRow = (item: Student) => (
+  const { page, search, ...queryParams } = searchParams;
+  const currentPage = page ? parseInt(page, 10) : 1;
+
+  const query: Prisma.StudentWhereInput = {};
+
+  if (search) {
+    query.OR = [
+      { name: { contains: search, mode: "insensitive" } },
+      { surname: { contains: search, mode: "insensitive" } },
+      { email: { contains: search, mode: "insensitive" } },
+      { username: { contains: search, mode: "insensitive" } },
+    ];
+  }
+
+  if (queryParams.gradeId) {
+    const gradeId = parseInt(queryParams.gradeId, 10);
+    if (!Number.isNaN(gradeId)) query.gradeId = gradeId;
+  }
+
+  if (queryParams.classId) {
+    const classId = parseInt(queryParams.classId, 10);
+    if (!Number.isNaN(classId)) query.classId = classId;
+  }
+
+  const [data, count, grades, classes, parents] = await prisma.$transaction([
+    prisma.student.findMany({
+      where: query,
+      include: {
+        class: {
+          include: {
+            grade: true,
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      take: ITEM_PER_PAGE,
+      skip: ITEM_PER_PAGE * (currentPage - 1),
+    }),
+    prisma.student.count({ where: query }),
+    prisma.grade.findMany({ orderBy: { level: "asc" } }),
+    prisma.class.findMany({ orderBy: { name: "asc" } }),
+    prisma.parent.findMany({
+      select: { id: true, name: true, surname: true },
+      orderBy: [{ name: "asc" }, { surname: "asc" }],
+    }),
+  ]);
+
+  const relatedData = { grades, classes, parents };
+
+  const renderRow = (item: StudentList) => (
     <tr
       key={item.id}
       className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-ajitPurpleLight"
     >
       <td className="flex items-center gap-4 p-4">
-        <Image
-          src={item.photo}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={item.photo || "/avatar.png"}
           alt=""
-          width={40}
-          height={40}
           className="md:hidden xl:block w-10 h-10 rounded-full object-cover"
         />
         <div className="flex flex-col">
-          <h3 className="font-semibold">{item.name}</h3>
-          <p className="text-xs text-gray-500">{item.class}</p>
+          <h3 className="font-semibold">{item.name + " " + item.surname}</h3>
+          <p className="text-xs text-gray-500">{item.class.name}</p>
         </div>
       </td>
-      <td className="hidden md:table-cell">{item.studentId}</td>
-      <td className="hidden md:table-cell">{item.grade}</td>
+      <td className="hidden md:table-cell">{item.username}</td>
+      <td className="hidden md:table-cell">{item.class.grade.level}</td>
       <td className="hidden md:table-cell">{item.phone}</td>
       <td className="hidden md:table-cell">{item.address}</td>
       <td>
@@ -83,7 +130,27 @@ const StudentListPage = () => {
           </Link>
           {role === "admin" && (
             <>
-              <FormModal table="student" type="update" data={item} />
+              <FormModal
+                table="student"
+                type="update"
+                data={{
+                  id: item.id,
+                  username: item.username,
+                  email: item.email,
+                  firstName: item.name,
+                  lastName: item.surname,
+                  phone: item.phone,
+                  address: item.address,
+                  bloodType: item.bloodType,
+                  birthday: item.birthday,
+                  sex: item.sex,
+                  gradeId: item.gradeId,
+                  classId: item.classId,
+                  parentId: item.parentId,
+                  photo: item.photo,
+                }}
+                relatedData={relatedData}
+              />
               <FormModal table="student" type="delete" id={item.id}/>
             </>
           )}
@@ -98,7 +165,9 @@ const StudentListPage = () => {
       <div className="flex items-center justify-between">
         <h1 className="hidden md:block text-lg font-semibold">All Students</h1>
         <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
-          <TableSearch />
+          <Suspense fallback={null}>
+            <TableSearch />
+          </Suspense>
           <div className="flex items-center gap-4 self-end">
             <button className="w-8 h-8 flex items-center justify-center rounded-full bg-ajitYellow">
               <Image src="/filter.png" alt="" width={14} height={14} />
@@ -107,16 +176,17 @@ const StudentListPage = () => {
               <Image src="/sort.png" alt="" width={14} height={14} />
             </button>
             {role === "admin" && (
-             
-              <FormModal table="student" type="create"/>
+              <FormModal table="student" type="create" relatedData={relatedData}/>
             )}
           </div>
         </div>
       </div>
       {/* LIST */}
-      <Table columns={columns} renderRow={renderRow} data={studentsData} />
+      <Table columns={columns} renderRow={renderRow} data={data} />
       {/* PAGINATION */}
-      <Pagination page={1} count={studentsData.length} />
+      <Suspense fallback={null}>
+        <Pagination page={currentPage} count={count} />
+      </Suspense>
     </div>
   );
 };

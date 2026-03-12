@@ -148,6 +148,91 @@ export async function deleteTeacher(
 }
 
 // ---------------------------------------------------------------------------
+// Student CRUD
+// ---------------------------------------------------------------------------
+export async function createStudent(
+  data: any
+): Promise<{ success: boolean; error: boolean; message?: string }> {
+  try {
+    await prisma.student.create({
+      data: {
+        username: data.username,
+        name: data.firstName,
+        surname: data.lastName,
+        email: data.email || undefined,
+        photo: data.img || undefined,
+        phone: data.phone || undefined,
+        address: data.address,
+        bloodType: data.bloodType,
+        birthday: data.birthday,
+        sex: data.sex === "male" ? UserSex.MALE : UserSex.FEMALE,
+        gradeId: parseInt(data.gradeId, 10),
+        classId: parseInt(data.classId, 10),
+        parentId: data.parentId,
+      },
+    });
+
+    revalidatePath("/list/students");
+    return { success: true, error: false };
+  } catch (err) {
+    console.error(err);
+    return {
+      success: false,
+      error: true,
+      message: "Failed to create student. Please check unique fields and required relations.",
+    };
+  }
+}
+
+export async function updateStudent(
+  data: any
+): Promise<{ success: boolean; error: boolean; message?: string }> {
+  try {
+    await prisma.student.update({
+      where: { id: data.id },
+      data: {
+        username: data.username,
+        name: data.firstName,
+        surname: data.lastName,
+        email: data.email || undefined,
+        photo: data.img || undefined,
+        phone: data.phone || undefined,
+        address: data.address,
+        bloodType: data.bloodType,
+        birthday: data.birthday,
+        sex: data.sex === "male" ? UserSex.MALE : UserSex.FEMALE,
+        gradeId: parseInt(data.gradeId, 10),
+        classId: parseInt(data.classId, 10),
+        parentId: data.parentId,
+      },
+    });
+
+    revalidatePath("/list/students");
+    return { success: true, error: false };
+  } catch (err) {
+    console.error(err);
+    return {
+      success: false,
+      error: true,
+      message: "Failed to update student.",
+    };
+  }
+}
+
+export async function deleteStudent(
+  id: string
+): Promise<{ success: boolean; error: boolean }> {
+  try {
+    await prisma.student.delete({ where: { id } });
+    revalidatePath("/list/students");
+    return { success: true, error: false };
+  } catch (err) {
+    console.error(err);
+    return { success: false, error: true };
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Subject CRUD
 // ---------------------------------------------------------------------------
 export async function getSubjects() {

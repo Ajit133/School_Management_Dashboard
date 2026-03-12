@@ -2,6 +2,7 @@ import FormModal from "@/components/FormModal";
 import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
+import TeacherListActions from "@/components/TeacherListActions";
 import { prisma } from "@/lib/prisma";
 import { ITEM_PER_PAGE } from "@/lib/settings";
 import { Class, Subject, Teacher } from "@prisma/client";
@@ -55,7 +56,7 @@ const TeacherListPage = async ({
 }) => {
   const role = cookies().get("auth_role")?.value;
 
-  const { page, search, ...queryParams } = searchParams;
+  const { page, search, sortBy, ...queryParams } = searchParams;
   const p = page ? parseInt(page) : 1;
 
   // Build Prisma where clause from URL params
@@ -74,6 +75,21 @@ const TeacherListPage = async ({
     query.subjects = { some: { id: parseInt(queryParams.subjectId) } };
   }
 
+  // Allow filtering by classId if provided as a query param
+  if (queryParams.classId) {
+    query.classes = { some: { id: parseInt(queryParams.classId) } };
+  }
+
+  // Handle sorting
+  let orderBy: any = { name: "asc" };
+  if (sortBy === "name-desc") {
+    orderBy = { name: "desc" };
+  } else if (sortBy === "email") {
+    orderBy = { email: "asc" };
+  } else if (sortBy === "phone") {
+    orderBy = { phone: "asc" };
+  }
+
   const [data, count, allSubjects, allClasses] = await prisma.$transaction([
     prisma.teacher.findMany({
       where: query,
@@ -81,6 +97,7 @@ const TeacherListPage = async ({
         subjects: true,
         classes: true,
       },
+      orderBy: orderBy,
       take: ITEM_PER_PAGE,
       skip: ITEM_PER_PAGE * (p - 1),
     }),
@@ -140,12 +157,7 @@ const TeacherListPage = async ({
         <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
           <Suspense fallback={null}><TableSearch /></Suspense>
           <div className="flex items-center gap-4 self-end">
-            <button className="w-8 h-8 flex items-center justify-center rounded-full bg-ajitYellow">
-              <Image src="/filter.png" alt="" width={14} height={14} />
-            </button>
-            <button className="w-8 h-8 flex items-center justify-center rounded-full bg-ajitYellow">
-              <Image src="/sort.png" alt="" width={14} height={14} />
-            </button>
+            <TeacherListActions allSubjects={allSubjects} allClasses={allClasses} />
             {role === "admin" && <FormModal table="teacher" type="create" relatedData={relatedData} />}
           </div>
         </div>
