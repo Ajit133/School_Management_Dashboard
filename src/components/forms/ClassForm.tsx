@@ -51,6 +51,7 @@ const ClassForm = ({
   const [isLoading, setIsLoading] = useState(false);
 
   const onSubmit = handleSubmit(async (formData) => {
+    console.log("Ajit")
     setIsLoading(true);
     setMessage(null);
     try {
