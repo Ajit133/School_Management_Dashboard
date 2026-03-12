@@ -31,6 +31,8 @@ const schema = z.object({
   bloodType: z.string().min(1, { message: "Blood Type is required!" }),
   birthday: z.coerce.date({ message: "Birthday is required!" }),
   sex: z.enum(["male", "female"], { message: "Sex is required!" }),
+  subjects: z.string().optional(),
+  classes: z.string().optional(),
   img: z.any().optional(),
 });
 
@@ -40,10 +42,15 @@ const TeacherForm = ({
   type,
   data,
   setOpen,
+  relatedData,
 }: {
   type: "create" | "update";
   data?: any;
   setOpen: Dispatch<SetStateAction<boolean>>;
+  relatedData?: {
+    subjects: { id: number; name: string }[];
+    classes: { id: number; name: string }[];
+  };
 }) => {
   const {
     register,
@@ -206,6 +213,38 @@ const TeacherForm = ({
           />
         </div>
       </div>
+      {relatedData && (
+        <>
+          <span className="text-xs text-gray-400 font-medium">
+            Subjects &amp; Classes
+          </span>
+          <div className="flex justify-between flex-wrap gap-4">
+            <InputField
+              label="Subjects"
+              name="subjects"
+              defaultValue={data?.subjects?.map((subject: any) => subject.name).join(", ")}
+              register={register}
+              error={errors.subjects}
+              inputProps={{
+                placeholder: "Math, English, Physics",
+              }}
+            />
+            <InputField
+              label="Classes"
+              name="classes"
+              defaultValue={data?.classes?.map((classItem: any) => classItem.name).join(", ")}
+              register={register}
+              error={errors.classes}
+              inputProps={{
+                placeholder: "Class 1A, Class 2B",
+              }}
+            />
+          </div>
+          <p className="text-xs text-gray-400 -mt-4">
+            Enter comma-separated names. Available subjects: {relatedData.subjects.map((subject) => subject.name).join(", ") || "None"}. Available classes: {relatedData.classes.map((classItem) => classItem.name).join(", ") || "None"}.
+          </p>
+        </>
+      )}
       {serverError && (
         <p className="text-xs text-red-500">{serverError}</p>
       )}

@@ -74,7 +74,7 @@ const TeacherListPage = async ({
     query.subjects = { some: { id: parseInt(queryParams.subjectId) } };
   }
 
-  const [data, count] = await prisma.$transaction([
+  const [data, count, allSubjects, allClasses] = await prisma.$transaction([
     prisma.teacher.findMany({
       where: query,
       include: {
@@ -85,7 +85,11 @@ const TeacherListPage = async ({
       skip: ITEM_PER_PAGE * (p - 1),
     }),
     prisma.teacher.count({ where: query }),
+    prisma.subject.findMany({ orderBy: { name: "asc" } }),
+    prisma.class.findMany({ orderBy: { name: "asc" } }),
   ]);
+
+  const relatedData = { subjects: allSubjects, classes: allClasses };
 
   const renderRow = (item: TeacherList) => (
     <tr
@@ -142,7 +146,7 @@ const TeacherListPage = async ({
             <button className="w-8 h-8 flex items-center justify-center rounded-full bg-ajitYellow">
               <Image src="/sort.png" alt="" width={14} height={14} />
             </button>
-            {role === "admin" && <FormModal table="teacher" type="create" />}
+            {role === "admin" && <FormModal table="teacher" type="create" relatedData={relatedData} />}
           </div>
         </div>
       </div>

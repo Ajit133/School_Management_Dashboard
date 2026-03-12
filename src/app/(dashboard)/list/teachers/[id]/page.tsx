@@ -15,16 +15,22 @@ const SingleTeacherPage = async ({
 }) => {
   const role = cookies().get("auth_role")?.value;
 
-  const teacher = await prisma.teacher.findUnique({
-    where: { id },
-    include: {
-      subjects: true,
-      classes: true,
-      _count: { select: { lessons: true, classes: true } },
-    },
-  });
+  const [teacher, allSubjects, allClasses] = await Promise.all([
+    prisma.teacher.findUnique({
+      where: { id },
+      include: {
+        subjects: true,
+        classes: true,
+        _count: { select: { lessons: true, classes: true } },
+      },
+    }),
+    prisma.subject.findMany({ orderBy: { name: "asc" } }),
+    prisma.class.findMany({ orderBy: { name: "asc" } }),
+  ]);
 
   if (!teacher) return notFound();
+
+  const relatedData = { subjects: allSubjects, classes: allClasses };
 
   return (
     <div className="flex-1 p-4 flex flex-col gap-4 xl:flex-row">
@@ -66,7 +72,10 @@ const SingleTeacherPage = async ({
                       bloodType: teacher.bloodType,
                       birthday: teacher.birthday,
                       sex: teacher.sex.toLowerCase(),
+                      subjects: teacher.subjects,
+                      classes: teacher.classes,
                     }}
+                    relatedData={relatedData}
                   />
                 )}
               </div>

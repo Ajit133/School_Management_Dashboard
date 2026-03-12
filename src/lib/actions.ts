@@ -63,10 +63,54 @@ export async function logout() {
 // ---------------------------------------------------------------------------
 // Teacher CRUD
 // ---------------------------------------------------------------------------
+const parseCommaSeparatedValues = (value?: string) =>
+  (value ?? "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+const getTeacherSubjects = async (value?: string) => {
+  const subjectNames = parseCommaSeparatedValues(value).filter(
+    (item, index, values) => values.indexOf(item) === index
+  );
+
+  if (!subjectNames.length) return [];
+
+  const subjects = await Promise.all(
+    subjectNames.map((name) =>
+      prisma.subject.upsert({
+        where: { name },
+        update: {},
+        create: { name },
+      })
+    )
+  );
+
+  return subjects.map((subject) => ({ id: subject.id }));
+};
+
+const getTeacherClasses = async (value?: string) => {
+  const classNames = parseCommaSeparatedValues(value).filter(
+    (item, index, values) => values.indexOf(item) === index
+  );
+
+  if (!classNames.length) return [];
+
+  const classes = await prisma.class.findMany({
+    where: { name: { in: classNames } },
+    select: { id: true },
+  });
+
+  return classes.map((classItem) => ({ id: classItem.id }));
+};
+
 export async function createTeacher(
   data: any
 ): Promise<{ success: boolean; error: boolean }> {
   try {
+    const subjects = await getTeacherSubjects(data.subjects);
+    const classes = await getTeacherClasses(data.classes);
+
     await prisma.teacher.create({
       data: {
         username: data.username,
@@ -79,6 +123,12 @@ export async function createTeacher(
         bloodType: data.bloodType,
         birthday: data.birthday,
         sex: data.sex === "male" ? UserSex.MALE : UserSex.FEMALE,
+        subjects: {
+          connect: subjects,
+        },
+        classes: {
+          connect: classes,
+        },
       },
     });
     revalidatePath("/list/teachers");
@@ -93,6 +143,9 @@ export async function updateTeacher(
   data: any
 ): Promise<{ success: boolean; error: boolean }> {
   try {
+    const subjects = await getTeacherSubjects(data.subjects);
+    const classes = await getTeacherClasses(data.classes);
+
     await prisma.teacher.update({
       where: { id: data.id },
       data: {
@@ -106,6 +159,12 @@ export async function updateTeacher(
         bloodType: data.bloodType,
         birthday: data.birthday,
         sex: data.sex === "male" ? UserSex.MALE : UserSex.FEMALE,
+        subjects: {
+          set: subjects,
+        },
+        classes: {
+          set: classes,
+        },
       },
     });
     revalidatePath("/list/teachers");

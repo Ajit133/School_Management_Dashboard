@@ -44,10 +44,18 @@ const forms: {
   [key: string]: (
     type: "create" | "update",
     data: any,
-    setOpen: Dispatch<SetStateAction<boolean>>
+    setOpen: Dispatch<SetStateAction<boolean>>,
+    relatedData?: any
   ) => JSX.Element;
 } = {
-  teacher: (type, data, setOpen) => <TeacherForm type={type} data={data} setOpen={setOpen} />,
+  teacher: (type, data, setOpen, relatedData) => (
+    <TeacherForm
+      type={type}
+      data={data}
+      setOpen={setOpen}
+      relatedData={relatedData}
+    />
+  ),
   student: (type, data, setOpen) => <StudentForm type={type} data={data} />,
   parent: (type, data, setOpen) => <ParentForm type={type} data={data} />,
   subject: (type, data, setOpen) => <SubjectForm type={type} data={data} />,
@@ -65,6 +73,7 @@ const FormModal = ({
   type,
   data,
   id,
+  relatedData,
 }: {
   table:
     | "teacher"
@@ -82,6 +91,7 @@ const FormModal = ({
   type: "create" | "update" | "delete";
   data?: any;
   id?: number | string;
+  relatedData?: any;
 }) => {
   const size = type === "create" ? "w-8 h-8" : "w-7 h-7";
   const bgColor =
@@ -123,7 +133,7 @@ const FormModal = ({
         </button>
       </div>
     ) : type === "create" || type === "update" ? (
-      forms[table](type, data, setOpen)
+      forms[table](type, data, setOpen, relatedData)
     ) : (
       "Form not found!"
     );
