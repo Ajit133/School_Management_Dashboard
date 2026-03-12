@@ -54,15 +54,17 @@ const TeacherForm = ({
   });
 
   const [imgPreview, setImgPreview] = useState<string | undefined>(data?.photo);
+  const [imgBase64, setImgBase64] = useState<string | undefined>(undefined);
   const [serverError, setServerError] = useState<string | null>(null);
   const router = useRouter();
 
   const onSubmit = handleSubmit(async (formData) => {
     setServerError(null);
+    const img = imgBase64 ?? undefined;
     const result =
       type === "create"
-        ? await createTeacher(formData)
-        : await updateTeacher({ ...formData, id: data?.id });
+        ? await createTeacher({ ...formData, img })
+        : await updateTeacher({ ...formData, id: data?.id, img });
 
     if (result.success) {
       router.refresh();
@@ -191,7 +193,15 @@ const TeacherForm = ({
             className="hidden"
             onChange={(e) => {
               const file = e.target.files?.[0];
-              if (file) setImgPreview(URL.createObjectURL(file));
+              if (file) {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                  const base64 = reader.result as string;
+                  setImgPreview(base64);
+                  setImgBase64(base64);
+                };
+                reader.readAsDataURL(file);
+              }
             }}
           />
         </div>
