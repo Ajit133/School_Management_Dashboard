@@ -31,8 +31,8 @@ const schema = z.object({
   bloodType: z.string().min(1, { message: "Blood Type is required!" }),
   birthday: z.coerce.date({ message: "Birthday is required!" }),
   sex: z.enum(["male", "female"], { message: "Sex is required!" }),
-  subjects: z.string().optional(),
-  classes: z.string().optional(),
+  subjects: z.array(z.string()).optional(),
+  classes: z.array(z.string()).optional(),
   img: z.any().optional(),
 });
 
@@ -58,6 +58,10 @@ const TeacherForm = ({
     formState: { errors },
   } = useForm<Inputs>({
     resolver: zodResolver(schema),
+    defaultValues: {
+      subjects: data?.subjects?.map((s: any) => String(s.id)) ?? [],
+      classes: data?.classes?.map((c: any) => String(c.id)) ?? [],
+    },
   });
 
   const [imgPreview, setImgPreview] = useState<string | undefined>(data?.photo);
@@ -219,30 +223,46 @@ const TeacherForm = ({
             Subjects &amp; Classes
           </span>
           <div className="flex justify-between flex-wrap gap-4">
-            <InputField
-              label="Subjects"
-              name="subjects"
-              defaultValue={data?.subjects?.map((subject: any) => subject.name).join(", ")}
-              register={register}
-              error={errors.subjects}
-              inputProps={{
-                placeholder: "Math, English, Physics",
-              }}
-            />
-            <InputField
-              label="Classes"
-              name="classes"
-              defaultValue={data?.classes?.map((classItem: any) => classItem.name).join(", ")}
-              register={register}
-              error={errors.classes}
-              inputProps={{
-                placeholder: "Class 1A, Class 2B",
-              }}
-            />
+            <div className="flex flex-col gap-2 w-full md:w-1/4">
+              <label className="text-xs text-gray-500">Subjects</label>
+              <select
+                multiple
+                className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full h-32"
+                {...register("subjects")}
+              >
+                {relatedData.subjects.map((subject) => (
+                  <option key={subject.id} value={String(subject.id)}>
+                    {subject.name}
+                  </option>
+                ))}
+              </select>
+              {errors.subjects?.message && (
+                <p className="text-xs text-red-400">
+                  {String(errors.subjects.message)}
+                </p>
+              )}
+            </div>
+            <div className="flex flex-col gap-2 w-full md:w-1/4">
+              <label className="text-xs text-gray-500">Classes (Supervised)</label>
+              <select
+                multiple
+                className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full h-32"
+                {...register("classes")}
+              >
+                {relatedData.classes.map((cls) => (
+                  <option key={cls.id} value={String(cls.id)}>
+                    {cls.name}
+                  </option>
+                ))}
+              </select>
+              {errors.classes?.message && (
+                <p className="text-xs text-red-400">
+                  {String(errors.classes.message)}
+                </p>
+              )}
+            </div>
           </div>
-          <p className="text-xs text-gray-400 -mt-4">
-            Enter comma-separated names. Available subjects: {relatedData.subjects.map((subject) => subject.name).join(", ") || "None"}. Available classes: {relatedData.classes.map((classItem) => classItem.name).join(", ") || "None"}.
-          </p>
+          <p className="text-xs text-gray-400 -mt-2">Hold Ctrl / Cmd to select multiple.</p>
         </>
       )}
       {serverError && (

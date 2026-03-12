@@ -77,7 +77,7 @@ const LessonListPage = () => {
       {/* LIST */}
       <Table columns={columns} renderRow={renderRow} data={lessonsData} />
       {/* PAGINATION */}
-      <Pagination />
+      <Pagination page={1} count={lessonsData.length} />
     </div>
   );
 };

@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import { Dispatch, SetStateAction, useState } from "react";
-import { deleteTeacher } from "@/lib/actions";
+import { deleteTeacher, deleteSubject, deleteClass } from "@/lib/actions";
 import { useRouter } from "next/navigation";
 
 const TeacherForm = dynamic(() => import("./forms/TeacherForm"), {
@@ -59,7 +59,9 @@ const forms: {
   student: (type, data, setOpen) => <StudentForm type={type} data={data} />,
   parent: (type, data, setOpen) => <ParentForm type={type} data={data} />,
   subject: (type, data, setOpen) => <SubjectForm type={type} data={data} />,
-  class: (type, data, setOpen) => <ClassForm type={type} data={data} />,
+  class: (type, data, setOpen, relatedData) => (
+    <ClassForm type={type} data={data} setOpen={setOpen} relatedData={relatedData} />
+  ),
   lesson: (type, data, setOpen) => <LessonForm type={type} data={data} />,
   exam: (type, data, setOpen) => <ExamForm type={type} data={data} />,
   assignment: (type, data, setOpen) => <AssignmentForm type={type} data={data} />,
@@ -107,11 +109,29 @@ const FormModal = ({
 
   const handleDelete = async () => {
     if (!id) return;
-    const result = await deleteTeacher(String(id));
-    if (result.success) {
-      router.refresh();
-      setOpen(false);
-    } else {
+
+    try {
+      let result;
+
+      if (table === "teacher") {
+        result = await deleteTeacher(String(id));
+      } else if (table === "subject") {
+        result = await deleteSubject(Number(id));
+      } else if (table === "class") {
+        result = await deleteClass(Number(id));
+      } else {
+        setDeleteError(true);
+        return;
+      }
+
+      if (result.success) {
+        router.refresh();
+        setOpen(false);
+      } else {
+        setDeleteError(true);
+      }
+    } catch (error) {
+      console.error(error);
       setDeleteError(true);
     }
   };

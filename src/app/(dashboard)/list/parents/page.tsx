@@ -93,7 +93,7 @@ const ParentListPage = () => {
       {/* LIST */}
       <Table columns={columns} renderRow={renderRow} data={parentsData} />
       {/* PAGINATION */}
-      <Pagination />
+      <Pagination page={1} count={parentsData.length} />
     </div>
   );
 };

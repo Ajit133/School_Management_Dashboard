@@ -2,7 +2,7 @@ import FormModal from "@/components/FormModal";
 import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
-import { subjectsData } from "@/lib/data";
+import { getSubjects, deleteSubject } from "@/lib/actions";
 import { cookies } from "next/headers";
 import Image from "next/image";
 
@@ -28,15 +28,17 @@ const columns = [
   },
 ];
 
-const SubjectListPage = () => {
+const SubjectListPage = async () => {
   const role = cookies().get("auth_role")?.value;
+  const subjectsData = await getSubjects();
+
   const renderRow = (item: Subject) => (
     <tr
       key={item.id}
       className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-ajitPurpleLight"
     >
       <td className="flex items-center gap-4 p-4">{item.name}</td>
-      <td className="hidden md:table-cell">{item.teachers.join(",")}</td>
+      <td className="hidden md:table-cell">{item.teachers.join(", ")}</td>
       <td>
         <div className="flex items-center gap-2">
           {role === "admin" && (
@@ -71,7 +73,7 @@ const SubjectListPage = () => {
       {/* LIST */}
       <Table columns={columns} renderRow={renderRow} data={subjectsData} />
       {/* PAGINATION */}
-      <Pagination />
+      <Pagination page={1} count={subjectsData.length} />
     </div>
   );
 };

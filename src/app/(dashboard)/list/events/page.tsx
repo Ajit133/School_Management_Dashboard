@@ -91,7 +91,7 @@ const EventListPage = () => {
       {/* LIST */}
       <Table columns={columns} renderRow={renderRow} data={eventsData} />
       {/* PAGINATION */}
-      <Pagination />
+      <Pagination page={1} count={eventsData.length} />
     </div>
   );
 };

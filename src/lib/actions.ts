@@ -63,53 +63,12 @@ export async function logout() {
 // ---------------------------------------------------------------------------
 // Teacher CRUD
 // ---------------------------------------------------------------------------
-const parseCommaSeparatedValues = (value?: string) =>
-  (value ?? "")
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
-
-const getTeacherSubjects = async (value?: string) => {
-  const subjectNames = parseCommaSeparatedValues(value).filter(
-    (item, index, values) => values.indexOf(item) === index
-  );
-
-  if (!subjectNames.length) return [];
-
-  const subjects = await Promise.all(
-    subjectNames.map((name) =>
-      prisma.subject.upsert({
-        where: { name },
-        update: {},
-        create: { name },
-      })
-    )
-  );
-
-  return subjects.map((subject) => ({ id: subject.id }));
-};
-
-const getTeacherClasses = async (value?: string) => {
-  const classNames = parseCommaSeparatedValues(value).filter(
-    (item, index, values) => values.indexOf(item) === index
-  );
-
-  if (!classNames.length) return [];
-
-  const classes = await prisma.class.findMany({
-    where: { name: { in: classNames } },
-    select: { id: true },
-  });
-
-  return classes.map((classItem) => ({ id: classItem.id }));
-};
-
 export async function createTeacher(
   data: any
 ): Promise<{ success: boolean; error: boolean }> {
   try {
-    const subjects = await getTeacherSubjects(data.subjects);
-    const classes = await getTeacherClasses(data.classes);
+    const subjects = (data.subjects ?? []).map((id: string) => ({ id: parseInt(id, 10) }));
+    const classes = (data.classes ?? []).map((id: string) => ({ id: parseInt(id, 10) }));
 
     await prisma.teacher.create({
       data: {
@@ -143,8 +102,8 @@ export async function updateTeacher(
   data: any
 ): Promise<{ success: boolean; error: boolean }> {
   try {
-    const subjects = await getTeacherSubjects(data.subjects);
-    const classes = await getTeacherClasses(data.classes);
+    const subjects = (data.subjects ?? []).map((id: string) => ({ id: parseInt(id, 10) }));
+    const classes = (data.classes ?? []).map((id: string) => ({ id: parseInt(id, 10) }));
 
     await prisma.teacher.update({
       where: { id: data.id },
@@ -185,6 +144,180 @@ export async function deleteTeacher(
   } catch (err) {
     console.error(err);
     return { success: false, error: true };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Subject CRUD
+// ---------------------------------------------------------------------------
+export async function getSubjects() {
+  try {
+    const subjects = await prisma.subject.findMany({
+      include: {
+        teachers: {
+          select: {
+            name: true,
+            surname: true,
+          },
+        },
+      },
+    });
+    
+    return subjects.map((subject) => ({
+      id: subject.id,
+      name: subject.name,
+      teachers: subject.teachers.map((t) => `${t.name} ${t.surname}`),
+    }));
+  } catch (err) {
+    console.error(err);
+    return [];
+  }
+}
+
+export async function createSubject(
+  data: any
+): Promise<{ success: boolean; error: boolean; message?: string }> {
+  try {
+    // Check if subject already exists
+    const existingSubject = await prisma.subject.findUnique({
+      where: { name: data.name },
+    });
+
+    if (existingSubject) {
+      return { success: false, error: true, message: "Subject already exists!" };
+    }
+
+    await prisma.subject.create({
+      data: {
+        name: data.name,
+        // Teachers will be linked separately if needed
+      },
+    });
+
+    revalidatePath("/list/subjects");
+    return { success: true, error: false, message: "Subject created successfully!" };
+  } catch (err) {
+    console.error(err);
+    return { success: false, error: true, message: "Failed to create subject" };
+  }
+}
+
+export async function updateSubject(
+  id: number,
+  data: any
+): Promise<{ success: boolean; error: boolean; message?: string }> {
+  try {
+    await prisma.subject.update({
+      where: { id },
+      data: {
+        name: data.name,
+      },
+    });
+
+    revalidatePath("/list/subjects");
+    return { success: true, error: false, message: "Subject updated successfully!" };
+  } catch (err) {
+    console.error(err);
+    return { success: false, error: true, message: "Failed to update subject" };
+  }
+}
+
+export async function deleteSubject(
+  id: number
+): Promise<{ success: boolean; error: boolean; message?: string }> {
+  try {
+    await prisma.subject.delete({ where: { id } });
+    revalidatePath("/list/subjects");
+    return { success: true, error: false, message: "Subject deleted successfully!" };
+  } catch (err) {
+    console.error(err);
+    return { success: false, error: true, message: "Failed to delete subject" };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Class CRUD
+// ---------------------------------------------------------------------------
+export async function createClass(
+  data: {
+    name: string;
+    capacity: number;
+    gradeId: number;
+    supervisorId?: string;
+  }
+): Promise<{ success: boolean; error: boolean; message?: string }> {
+  try {
+    const existingClass = await prisma.class.findUnique({
+      where: { name: data.name },
+    });
+
+    if (existingClass) {
+      return { success: false, error: true, message: "Class name already exists!" };
+    }
+
+    await prisma.class.create({
+      data: {
+        name: data.name,
+        capacity: data.capacity,
+        gradeId: data.gradeId,
+        supervisorId: data.supervisorId || null,
+      },
+    });
+
+    revalidatePath("/list/classes");
+    return { success: true, error: false, message: "Class created successfully!" };
+  } catch (err) {
+    console.error(err);
+    return { success: false, error: true, message: "Failed to create class" };
+  }
+}
+
+export async function updateClass(
+  id: number,
+  data: {
+    name: string;
+    capacity: number;
+    gradeId: number;
+    supervisorId?: string;
+  }
+): Promise<{ success: boolean; error: boolean; message?: string }> {
+  try {
+    const existingClass = await prisma.class.findFirst({
+      where: { name: data.name, NOT: { id } },
+    });
+
+    if (existingClass) {
+      return { success: false, error: true, message: "Class name already exists!" };
+    }
+
+    await prisma.class.update({
+      where: { id },
+      data: {
+        name: data.name,
+        capacity: data.capacity,
+        gradeId: data.gradeId,
+        supervisorId: data.supervisorId || null,
+      },
+    });
+
+    revalidatePath("/list/classes");
+    return { success: true, error: false, message: "Class updated successfully!" };
+  } catch (err) {
+    console.error(err);
+    return { success: false, error: true, message: "Failed to update class" };
+  }
+}
+
+export async function deleteClass(
+  id: number
+): Promise<{ success: boolean; error: boolean; message?: string }> {
+  try {
+    await prisma.class.delete({ where: { id } });
+    revalidatePath("/list/classes");
+    return { success: true, error: false, message: "Class deleted successfully!" };
+  } catch (err) {
+    console.error(err);
+    return { success: false, error: true, message: "Failed to delete class" };
   }
 }
 
