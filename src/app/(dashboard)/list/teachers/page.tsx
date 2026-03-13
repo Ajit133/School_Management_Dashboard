@@ -1,11 +1,12 @@
 import FormModal from "@/components/FormModal";
 import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
-import TableSearch from "@/components/TableSearch";
+import TeacherSearchAutocomplete from "@/components/TeacherSearchAutocomplete";
 import TeacherListActions from "@/components/TeacherListActions";
 import { prisma } from "@/lib/prisma";
 import { ITEM_PER_PAGE } from "@/lib/settings";
 import { Class, Subject, Teacher } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { cookies } from "next/headers";
 import Image from "next/image";
 import Link from "next/link";
@@ -63,11 +64,38 @@ const TeacherListPage = async ({
   const query: any = {};
 
   if (search) {
-    query.OR = [
+    const terms = search
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+
+    const baseSearch: Prisma.TeacherWhereInput[] = [
       { name: { contains: search, mode: "insensitive" } },
       { surname: { contains: search, mode: "insensitive" } },
       { email: { contains: search, mode: "insensitive" } },
+      { username: { contains: search, mode: "insensitive" } },
     ];
+
+    if (terms.length >= 2) {
+      const first = terms[0];
+      const rest = terms.slice(1).join(" ");
+
+      baseSearch.push({
+        AND: [
+          { name: { contains: first, mode: "insensitive" } },
+          { surname: { contains: rest, mode: "insensitive" } },
+        ],
+      });
+
+      baseSearch.push({
+        AND: [
+          { name: { contains: rest, mode: "insensitive" } },
+          { surname: { contains: first, mode: "insensitive" } },
+        ],
+      });
+    }
+
+    query.OR = baseSearch;
   }
 
   // Allow filtering by subjectId if provided as a query param
@@ -155,7 +183,7 @@ const TeacherListPage = async ({
       <div className="flex items-center justify-between">
         <h1 className="hidden md:block text-lg font-semibold">All Teachers</h1>
         <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
-          <Suspense fallback={null}><TableSearch /></Suspense>
+          <Suspense fallback={null}><TeacherSearchAutocomplete /></Suspense>
           <div className="flex items-center gap-4 self-end">
             <TeacherListActions allSubjects={allSubjects} allClasses={allClasses} />
             {role === "admin" && <FormModal table="teacher" type="create" relatedData={relatedData} />}

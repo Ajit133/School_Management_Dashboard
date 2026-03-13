@@ -1,7 +1,8 @@
 import FormModal from "@/components/FormModal";
 import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
-import TableSearch from "@/components/TableSearch";
+import StudentSearchAutocomplete from "@/components/StudentSearchAutocomplete";
+import StudentListActions from "@/components/StudentListActions";
 import { prisma } from "@/lib/prisma";
 import { ITEM_PER_PAGE } from "@/lib/settings";
 import { Prisma } from "@prisma/client";
@@ -51,18 +52,44 @@ const StudentListPage = async ({
   searchParams: { [key: string]: string | undefined };
 }) => {
   const role = cookies().get("auth_role")?.value;
-  const { page, search, ...queryParams } = searchParams;
+  const { page, search, sortBy, ...queryParams } = searchParams;
   const currentPage = page ? parseInt(page, 10) : 1;
 
   const query: Prisma.StudentWhereInput = {};
 
   if (search) {
-    query.OR = [
+    const terms = search
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+
+    const baseSearch: Prisma.StudentWhereInput[] = [
       { name: { contains: search, mode: "insensitive" } },
       { surname: { contains: search, mode: "insensitive" } },
       { email: { contains: search, mode: "insensitive" } },
       { username: { contains: search, mode: "insensitive" } },
     ];
+
+    if (terms.length >= 2) {
+      const first = terms[0];
+      const rest = terms.slice(1).join(" ");
+
+      baseSearch.push({
+        AND: [
+          { name: { contains: first, mode: "insensitive" } },
+          { surname: { contains: rest, mode: "insensitive" } },
+        ],
+      });
+
+      baseSearch.push({
+        AND: [
+          { name: { contains: rest, mode: "insensitive" } },
+          { surname: { contains: first, mode: "insensitive" } },
+        ],
+      });
+    }
+
+    query.OR = baseSearch;
   }
 
   if (queryParams.gradeId) {
@@ -75,6 +102,20 @@ const StudentListPage = async ({
     if (!Number.isNaN(classId)) query.classId = classId;
   }
 
+  let orderBy: Prisma.StudentOrderByWithRelationInput = { createdAt: "desc" };
+
+  if (sortBy === "oldest") {
+    orderBy = { createdAt: "asc" };
+  } else if (sortBy === "name-asc") {
+    orderBy = { name: "asc" };
+  } else if (sortBy === "name-desc") {
+    orderBy = { name: "desc" };
+  } else if (sortBy === "grade-asc") {
+    orderBy = { grade: { level: "asc" } };
+  } else if (sortBy === "grade-desc") {
+    orderBy = { grade: { level: "desc" } };
+  }
+
   const [data, count, grades, classes, parents] = await prisma.$transaction([
     prisma.student.findMany({
       where: query,
@@ -85,7 +126,7 @@ const StudentListPage = async ({
           },
         },
       },
-      orderBy: { createdAt: "desc" },
+      orderBy,
       take: ITEM_PER_PAGE,
       skip: ITEM_PER_PAGE * (currentPage - 1),
     }),
@@ -166,15 +207,10 @@ const StudentListPage = async ({
         <h1 className="hidden md:block text-lg font-semibold">All Students</h1>
         <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
           <Suspense fallback={null}>
-            <TableSearch />
+            <StudentSearchAutocomplete />
           </Suspense>
           <div className="flex items-center gap-4 self-end">
-            <button className="w-8 h-8 flex items-center justify-center rounded-full bg-ajitYellow">
-              <Image src="/filter.png" alt="" width={14} height={14} />
-            </button>
-            <button className="w-8 h-8 flex items-center justify-center rounded-full bg-ajitYellow">
-              <Image src="/sort.png" alt="" width={14} height={14} />
-            </button>
+            <StudentListActions allGrades={grades} allClasses={classes} />
             {role === "admin" && (
               <FormModal table="student" type="create" relatedData={relatedData}/>
             )}

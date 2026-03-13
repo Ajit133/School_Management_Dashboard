@@ -9,11 +9,18 @@ const TableSearch = () => {
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const value = (e.currentTarget[0] as HTMLInputElement).value;
+    const formData = new FormData(e.currentTarget);
+    const value = formData.get("search")?.toString().trim() ?? "";
     const params = new URLSearchParams(searchParams.toString());
-    params.set("search", value);
+
+    if (value) {
+      params.set("search", value);
+    } else {
+      params.delete("search");
+    }
+
     params.set("page", "1");
-    router.push(`?${params}`);
+    router.push(`?${params.toString()}`);
   };
 
   return (
@@ -25,6 +32,7 @@ const TableSearch = () => {
         <Image src="/search.png" alt="Search" width={14} height={14} />
       </button>
       <input
+        name="search"
         type="text"
         placeholder="Search..."
         defaultValue={searchParams.get("search") ?? ""}
