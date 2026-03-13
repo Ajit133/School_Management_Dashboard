@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { cookies } from "next/headers";
-import { logout } from "@/lib/actions";
+import { logout } from "@/lib/auth";
 
 const ROLE_DISPLAY: Record<string, string> = {
   admin:   "Administrator",

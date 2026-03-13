@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { login } from "@/lib/actions";
+import { login } from "@/lib/auth";
 
 const schema = z.object({
   username: z.string().min(1, "Username is required"),
